@@ -1,0 +1,89 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Fractal Clock</title>
+        <style>
+            body { margin: 0; background-color: black; }
+            canvas { display: block; }
+        </style>
+    </head>
+    <body>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <script>
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            const depth = 12; // Increased recursion depth
+            const baseAngle = Math.PI/18; // Base angle for rotation
+            const handsCount = 32; // Number of hands
+            let rotationSpeed = 0.01; // Initial rotation speed
+            const secondHandColor = 0xaaaaaa; // Light gray color
+            const minuteHandColor = 0x888888; // Darker gray color
+
+            // Function to clear the scene
+            function clearScene() {
+                while (scene.children.length > 0) {
+                    const object = scene.children.pop();
+                    if (object.geometry) object.geometry.dispose();
+                    if (object.material) object.material.dispose();
+                }
+            }
+
+            // Recursive fractal creation
+            function createFractal(x, y, size, depth, angle, color, initialDepth, rotationSpeed) {
+                if (depth === 0) return;
+
+                const material = new THREE.LineBasicMaterial({ color });
+                const points = [
+                    new THREE.Vector3(x, y, 0),
+                    new THREE.Vector3(x + size * Math.cos(angle), y + size * Math.sin(angle), 0)
+                ];
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, material);
+                scene.add(line);
+
+                const newSize = size * 0.85; // Reduced size for fractal branching
+                const currentRotation = baseAngle + (initialDepth - depth) * rotationSpeed;
+
+                createFractal(
+                    x + size * Math.cos(angle),
+                    y + size * Math.sin(angle),
+                    newSize,
+                    depth - 1,
+                    angle + currentRotation,
+                    color,
+                    initialDepth,
+                    rotationSpeed
+                );
+            }
+
+            // Create the clock fractal
+            function createClock() {
+                for (let i = 0; i < handsCount; i++) {
+                    const angleOffset = (2 * Math.PI / handsCount) * i;
+                    createFractal(0, 0, 1, depth, angleOffset, secondHandColor, depth, rotationSpeed);
+                    createFractal(0, 0, 0.7, depth, angleOffset + Math.PI / 30, minuteHandColor, depth, rotationSpeed);
+                }
+            }
+
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                clearScene(); // Clear previous frame's objects
+                createClock(); // Recreate the fractal clock
+
+                scene.rotation.z += 0.01; // Rotate the scene
+                rotationSpeed += 0.001; // Gradually increase rotation speed
+                renderer.render(scene, camera);
+            }
+
+            camera.position.z = 10; // Position the camera
+            animate(); // Start animation loop
+        </script>
+    </body>
+    </html>
