@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fractal Clock</title>
+    <style>
+        body { margin: 0; background-color: black; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/shaders/CopyShader.js"></script>
+
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio); // High-resolution rendering
+        document.body.appendChild(renderer.domElement);
+
+        const composer = new THREE.EffectComposer(renderer);
+        const renderPass = new THREE.RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const bloomPass = new THREE.UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            5.75,
+            0.55,
+            0.3
+        );
+        composer.addPass(bloomPass);
+
+        const scale = 1.75;
+        const depth = 20;
+        const baseAngle = -Math.PI/9;
+        const handsCount = 24;
+        let rotationSpeed = 0.01;
+        let speedInc = 0.002;
+        // const secondHandColor = 0xd12eb9; //red thing
+        // const minuteHandColor = 0xe32245; //red
+        // const secondHandColor = 0xffffaa;
+        // const minuteHandColor = 0xffaa88;
+        const secondHandColor = 0x88ccff; // Soft sky blue
+        const minuteHandColor = 0xff88cc; // Gentle pink
+
+        function clearScene() {
+            while (scene.children.length > 0) {
+                const object = scene.children.pop();
+                if (object.geometry) object.geometry.dispose();
+                if (object.material) object.material.dispose();
+            }
+        }
+
+        function createFractal(x, y, size, depth, angle, color, initialDepth, rotationSpeed) {
+            if (depth === 0) return;
+
+            const material = new THREE.LineBasicMaterial({ 
+                color, 
+                linewidth: 2, // Increase line width
+                precision: "highp", // High precision for lines
+                dithering: true // Disable dithering for sharper lines
+            });
+
+            const points = [
+                new THREE.Vector3(x, y, 0),
+                new THREE.Vector3(x + size * Math.cos(angle), y + size * Math.sin(angle), 0)
+            ];
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, material);
+            scene.add(line);
+
+            const newSize = size * 0.85;
+            const currentRotation = baseAngle + (initialDepth - depth) * rotationSpeed;
+
+            createFractal(
+                x + size * Math.cos(angle),
+                y + size * Math.sin(angle),
+                newSize,
+                depth - 1,
+                angle + currentRotation,
+                color,
+                initialDepth,
+                rotationSpeed
+            );
+        }
+
+        function createClock() {
+            for (let i = 0; i < handsCount; i++) {
+                const angleOffset = (2 * Math.PI / handsCount) * i;
+                createFractal(0, 0, 1*scale, depth, angleOffset, secondHandColor, depth, rotationSpeed);
+                createFractal(0, 0, 0.7*scale, depth, angleOffset + Math.PI / 30, minuteHandColor, depth, rotationSpeed);
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            clearScene();
+            createClock();
+
+            scene.rotation.z += 0.01;
+            rotationSpeed += speedInc;
+            composer.render();
+        }
+
+        camera.position.z = 10;
+        animate();
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio); // Maintain high resolution on resize
+            composer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>
+        // const secondHandColor = 0xffffaa;
+        // const minuteHandColor = 0xffaa88;
+        // const secondHandColor = 0x88ccff; // Soft sky blue
+        // const minuteHandColor = 0xff88cc; // Gentle pink
+
+        function clearScene() {
+            while (scene.children.length > 0) {
+                const object = scene.children.pop();
+                if (object.geometry) object.geometry.dispose();
+                if (object.material) object.material.dispose();
+            }
+        }
+
+        function createFractal(x, y, size, depth, angle, color, initialDepth, rotationSpeed) {
+            if (depth === 0) return;
+
+            const material = new THREE.LineBasicMaterial({ 
+                color, 
+                linewidth: 2, // Increase line width
+                precision: "highp", // High precision for lines
+                dithering: true // Disable dithering for sharper lines
+            });
+
+            const points = [
+                new THREE.Vector3(x, y, 0),
+                new THREE.Vector3(x + size * Math.cos(angle), y + size * Math.sin(angle), 0)
+            ];
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, material);
+            scene.add(line);
+
+            const newSize = size * 0.85;
+            const currentRotation = baseAngle + (initialDepth - depth) * rotationSpeed;
+
+            createFractal(
+                x + size * Math.cos(angle),
+                y + size * Math.sin(angle),
+                newSize,
+                depth - 1,
+                angle + currentRotation,
+                color,
+                initialDepth,
+                rotationSpeed
+            );
+        }
+
+        function createClock() {
+            for (let i = 0; i < handsCount; i++) {
+                const angleOffset = (2 * Math.PI / handsCount) * i;
+                createFractal(0, 0, 1, depth, angleOffset, secondHandColor, depth, rotationSpeed);
+                createFractal(0, 0, 0.7, depth, angleOffset + Math.PI / 30, minuteHandColor, depth, rotationSpeed);
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            clearScene();
+            createClock();
+
+            scene.rotation.z += 0.01;
+            rotationSpeed += 0.001;
+            composer.render();
+        }
+
+        camera.position.z = 10;
+        animate();
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio); // Maintain high resolution on resize
+            composer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>
