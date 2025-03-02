@@ -7,21 +7,39 @@ typedef long long ll;
 using namespace std;
 inline int solve(string s, string t) {
     int n = s.length();
-    if (s==t) return 0;
-    int ones_s = 0, ones_t = 0;
-    for (int i=0; i<n; i++) {
-        ones_s+=(s[i] == '1');
-        ones_t+=(t[i] == '1');
+    vector<pair<int,int>> blocks;
+    for(int i = 0; i < n; ) {
+        int j = i;
+        while(j < n && s[j] == s[i]) j++;
+        blocks.push_back({i, j-1});
+        i = j;
     }
-    if (ones_s!=ones_t) return -1;
-    string sorted_t = t;
-    for (int i=0; i<n-1; i++) for (int j=0; j<n-1-i; j++) if (sorted_t[j]>sorted_t[j+1]) swap(sorted_t[j], sorted_t[j+1]);
-    string sorted_s = s;
-    for (int i=0; i<n-1; i++) for (int j=0; j<n-1-i; j++) if (sorted_s[j]>sorted_s[j+1]) swap(sorted_s[j], sorted_s[j+1]);
-    if (sorted_s!=sorted_t) return -1;
-    int diff = 0;
-    for (int i=0; i<n; i++) if (s[i]!=t[i]) diff++;
-    return (diff + 1) / 2;
+    int ops = 0;
+    string current = s;
+    for(int i = 0; i < blocks.size(); i++) {
+        int start = blocks[i].first;
+        int end = blocks[i].second;
+        char blockChar = s[start];
+        bool valid = true;
+        for(int j = start; j <= end; j++) {
+            if(t[j] != blockChar) {
+                valid = false;
+                break;
+            }
+        }
+        if(!valid) {
+            if(i == blocks.size() - 1) return -1;
+            ops += (blocks[i+1].second - blocks[i].first + 1) / 2;
+            blocks[i+1].first = blocks[i].first;
+        }
+    }
+    string result = s;
+    for(int i = 0; i < n; i++) {
+        if(t[i] != '?' && result[i] != t[i]) {
+            return -1;
+        }
+    }
+    return ops;
 }
 signed main() {
     int tc; cin>>tc;
